@@ -1,0 +1,16 @@
+*.log
+.cache
+
+# Editor directories and files
+.windsurf
+.devin
+.claude
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
