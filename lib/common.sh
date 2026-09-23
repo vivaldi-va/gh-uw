@@ -33,6 +33,33 @@ ticket_id() {
     true
 }
 
+# Branch types we surface in PR titles. Extend this list to add more.
+GH_UW_BRANCH_TYPES=${GH_UW_BRANCH_TYPES:-"HOTFIX RELEASE"}
+
+# The branch type prefix, when the branch name starts with a marked one.
+#   hotfix/ABC-123-oauth -> HOTFIX
+#   release-2026.09      -> RELEASE
+#   feat/ABC-123-oauth   -> (nothing)
+# Always returns 0, so `x=$(branch_type)` is safe under `set -e` on a branch
+# with no marked type.
+branch_type() {
+  local branch prefix type
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 0
+
+  # Everything before the first / or -, uppercased. `${x^^}` would be neater
+  # but needs bash 4; macOS still ships 3.2.
+  prefix="${branch%%[/-]*}"
+  prefix="$(printf '%s' "$prefix" | tr '[:lower:]' '[:upper:]')"
+
+  for type in $GH_UW_BRANCH_TYPES; do
+    if [[ $prefix == "$type" ]]; then
+      printf '%s' "$type"
+      return 0
+    fi
+  done
+  return 0
+}
+
 # Subject line of the most recent commit, with any leading ticket prefix
 # stripped so it is not duplicated when we add our own.
 last_commit_subject() {

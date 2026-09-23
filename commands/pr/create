@@ -11,18 +11,21 @@ source "${GH_UW_ROOT:?must be run as: gh uw pr create}/lib/common.sh"
 
 usage() {
   cat <<'EOF'
-Create a pull request titled "<TICKET>: <description>".
+Create a pull request titled "[TYPE: ][TICKET: ]<description>".
 
 USAGE
   gh uw pr create [description] [flags]
 
 The description is optional; when omitted it is taken from the subject of the
 most recent commit. TICKET is parsed from the current branch name, e.g.
-feat/ABC-123-retry-webhooks -> ABC-123. Flags are passed through to
-`gh pr create`, so its defaults still apply.
+feat/ABC-123-retry-webhooks -> ABC-123. TYPE is added only on hotfix and
+release branches. Flags are passed through to `gh pr create`, so its defaults
+still apply.
 
 EXAMPLES
   gh uw pr create "retry failed webhooks"
+    on feat/ABC-123-webhooks   -> "ABC-123: retry failed webhooks"
+    on hotfix/ABC-123-webhooks -> "HOTFIX: ABC-123: retry failed webhooks"
   gh uw pr create -df
   gh uw pr create "bump deps" --base main --reviewer @me
 EOF
@@ -55,12 +58,15 @@ main() {
       die "no description given and no commits on this branch to derive one from"
   fi
 
-  local ticket title
+  local ticket type title
   ticket="$(ticket_id)"
+  type="$(branch_type)"
   if [[ -z $ticket ]]; then
-    warn "no ticket ID in branch name; creating the PR without a prefix"
+    warn "no ticket ID in branch name; creating the PR without a ticket prefix"
   fi
-  title="${ticket:+$ticket: }$description"
+  # Each segment is included only when non-empty, so the separators never
+  # collapse into a stray ": ". Swap the two expansions to flip the order.
+  title="${type:+$type: }${ticket:+$ticket: }$description"
 
   # If the caller passes their own --title it lands after ours on the command
   # line and wins, which is the behaviour we want for an escape hatch.
