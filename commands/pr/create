@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+#
+# gh uw pr create [description] [gh pr create flags...]
+#
+# Wraps `gh pr create`, prefixing the title with the ticket ID parsed from the
+# current branch name. Every other flag is forwarded to gh untouched.
+
+set -euo pipefail
+
+source "${GH_UW_ROOT:?must be run as: gh uw pr create}/lib/common.sh"
+
+usage() {
+  cat <<'EOF'
+Create a pull request titled "<TICKET>: <description>".
+
+USAGE
+  gh uw pr create [description] [flags]
+
+The description is optional; when omitted it is taken from the subject of the
+most recent commit. TICKET is parsed from the current branch name, e.g.
+feat/ABC-123-retry-webhooks -> ABC-123. Flags are passed through to
+`gh pr create`, so its defaults still apply.
+
+EXAMPLES
+  gh uw pr create "retry failed webhooks"
+  gh uw pr create -df
+  gh uw pr create "bump deps" --base main --reviewer @me
+EOF
+}
+
+main() {
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      -h | --help)
+        usage
+        return 0
+        ;;
+    esac
+  done
+
+  require_git_repo
+
+  # A leading argument that is not a flag is our description; everything from
+  # there on belongs to gh.
+  local description=""
+  if (($# > 0)) && [[ $1 != -* ]]; then
+    description="$1"
+    shift
+  fi
+
+  if [[ -z $description ]]; then
+    description="$(last_commit_subject)"
+    [[ -n $description ]] ||
+      die "no description given and no commits on this branch to derive one from"
+  fi
+
+  local ticket title
+  ticket="$(ticket_id)"
+  if [[ -z $ticket ]]; then
+    warn "no ticket ID in branch name; creating the PR without a prefix"
+  fi
+  title="${ticket:+$ticket: }$description"
+
+  # If the caller passes their own --title it lands after ours on the command
+  # line and wins, which is the behaviour we want for an escape hatch.
+  exec gh pr create --title "$title" "$@"
+}
+
+main "$@"

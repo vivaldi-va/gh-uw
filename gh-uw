@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#
+# gh-uw — UW-specific gh commands.
+#
+# This file is dispatch only. It resolves
+#
+#   gh uw <command> <subcommand> [args...]
+#
+# to commands/<command>/<subcommand> and execs it with the remaining args.
+# All real behaviour lives in the command scripts; shared helpers live in lib/.
+
+set -euo pipefail
+
+# Resolve the repo root once and hand it to command scripts via the environment.
+# `cd`+`pwd -P` resolves symlinks (a local `gh extension install .` symlinks this
+# directory) and, unlike realpath, exists on stock macOS.
+GH_UW_ROOT="$(cd "$(dirname "$0")" && pwd -P)"
+export GH_UW_ROOT
+
+# shellcheck source=lib/common.sh
+source "$GH_UW_ROOT/lib/common.sh"
+
+usage() {
+  cat <<'EOF'
+UW-specific gh commands.
+
+USAGE
+  gh uw <command> <subcommand> [flags]
+
+COMMANDS
+EOF
+  list_commands
+  cat <<'EOF'
+
+Run `gh uw <command>` to list its subcommands, or
+`gh uw <command> <subcommand> --help` for details.
+EOF
+}
+
+# Command and subcommand become path segments, so allow-list them rather than
+# trusting argv: this is what stops `gh uw ../../.. something` from escaping
+# commands/ and exec'ing an arbitrary file.
+valid_name() {
+  [[ $1 =~ ^[a-z][a-z0-9-]*$ ]]
+}
+
+main() {
+  local cmd="${1:-}" sub="${2:-}"
+
+  case "$cmd" in
+    "" | -h | --help | help)
+      usage
+      return 0
+      ;;
+  esac
+
+  valid_name "$cmd" || die "invalid command name: $cmd"
+  local group_dir="$GH_UW_ROOT/commands/$cmd"
+  [[ -d $group_dir ]] || die "unknown command: gh uw $cmd"
+
+  case "$sub" in
+    "" | -h | --help)
+      list_subcommands "$cmd"
+      return 0
+      ;;
+  esac
+
+  valid_name "$sub" || die "invalid subcommand name: $sub"
+  local target="$group_dir/$sub"
+  [[ -f $target ]] || die "unknown subcommand: gh uw $cmd $sub"
+  [[ -x $target ]] ||
+    die "commands/$cmd/$sub is not executable (git update-index --chmod=+x commands/$cmd/$sub)"
+
+  exec "$target" "${@:3}"
+}
+
+main "$@"
