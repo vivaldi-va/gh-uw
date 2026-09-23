@@ -18,14 +18,14 @@ USAGE
 
 The description is optional; when omitted it is taken from the subject of the
 most recent commit. TICKET is parsed from the current branch name, e.g.
-feat/ABC-123-retry-webhooks -> ABC-123. TYPE is added only on hotfix and
-release branches. Flags are passed through to `gh pr create`, so its defaults
-still apply.
+ABC-123-foo-bar -> ABC-123. TYPE is added only on branches with pre-defined prefixes.
+Flags are passed through to `gh pr create`, so defaults still apply.
 
 EXAMPLES
-  gh uw pr create "retry failed webhooks"
-    on feat/ABC-123-webhooks   -> "ABC-123: retry failed webhooks"
-    on hotfix/ABC-123-webhooks -> "HOTFIX: ABC-123: retry failed webhooks"
+  gh uw pr create "some pr title"
+    on feat/ABC-123-foo   -> "ABC-123: some pr title"
+    on hotfix-foo -> "HOTFIX: some pr title"
+    on release/ABC-123-foo -> "RELEASE: ABC-123: some pr title"
   gh uw pr create -df
   gh uw pr create "bump deps" --base main --reviewer @me
 EOF
