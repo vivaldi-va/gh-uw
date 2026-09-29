@@ -12,4 +12,7 @@ uw gh CLI extensions
 # e.g. branch name: "AA-1234-some-branch-name"
 gh uw pr create [<description>] [<flags>]
     PR title: "AA-1234: some branch name" (or <description> if provided)
+
+gh uw pr create "some title" -df -B base-branch
+    // "AA-1234: some title"
 ```
