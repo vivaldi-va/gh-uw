@@ -53,7 +53,7 @@ main() {
   fi
 
   if [[ -z $description ]]; then
-    description="$(last_commit_subject)"
+    description="$(string_from_branch)"
     [[ -n $description ]] ||
       die "no description given and no commits on this branch to derive one from"
   fi
@@ -67,6 +67,8 @@ main() {
   # Each segment is included only when non-empty, so the separators never
   # collapse into a stray ": ". Swap the two expansions to flip the order.
   title="${type:+$type: }${ticket:+$ticket: }$description"
+
+  printf 'Creating PR with title: "%s"\n' "$title"
 
   # If the caller passes their own --title it lands after ours on the command
   # line and wins, which is the behaviour we want for an escape hatch.
