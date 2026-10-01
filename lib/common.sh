@@ -70,7 +70,7 @@ last_commit_subject() {
 string_from_branch() {
   local branch message
   branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 0
-  message=$(printf '%s' "$branch" | sed -E 's/^[A-Z0-9]+-[0-9]+[\/-_]?:?[[:space:]]*//' | sed -E 's/[-_]/ /')
+  message=$(printf '%s' "$branch" | sed -E 's/^[A-Z0-9]+-[0-9]+[\/-_]?:?[[:space:]]*//' | sed -E 's/[-_]/ /g')
   printf '%s' "$message"
 }
 
